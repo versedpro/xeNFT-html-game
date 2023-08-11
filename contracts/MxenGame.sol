@@ -114,7 +114,7 @@ contract MxenGame is Ownable {
 
     function getTimeLeft() public view returns (uint256) {
         require(block.timestamp <= endTime, "Game has been ended already");
-        timeLeft = endTime - block.timestamp;
+        uint256 timeLeft = endTime - block.timestamp;
 
         return timeLeft;
     }
