@@ -62,16 +62,17 @@ contract MxenGame is Ownable {
     }
 
     function placeBid(uint256 amount) external gameIsActive {
-        require(
-            amount % 10000000 == 0,
-            "Bids must be in batches of 10,000,000"
-        );
+        require(amount % 5000 == 0, "Bids must be in batches of 5,000");
         require(
             amount > highestBid,
             "Your bid must be higher than the current highest bid"
         );
         require(
-            mxenToken.transferFrom(msg.sender, address(this), amount),
+            mxenToken.transferFrom(
+                msg.sender,
+                address(this),
+                amount * 10 ** 18
+            ),
             "Transfer failed"
         );
 
@@ -91,7 +92,7 @@ contract MxenGame is Ownable {
 
         uint256 rewardAmount = (highestBid * 80) / 100;
         require(
-            mxenToken.transfer(highestBidder, rewardAmount),
+            mxenToken.transfer(highestBidder, rewardAmount * 10 ** 18),
             "Transfer failed"
         );
 

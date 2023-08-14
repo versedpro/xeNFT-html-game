@@ -89,13 +89,13 @@
       </div>
 
       <div class="button-section">
-        <button id="bidButton" class="action-button" disabled>Bid 10,000,000 Mxen</button>
+        <button id="bidButton" class="action-button" disabled>Bid 5,000 Mxen more than current higest bidder</button>
         <button id="claimButton" class="action-button" disabled>Claim Reward</button>
       </div>
     </div>
 
     <script>
-      const contractAddress = "0xadc0b2daeEdE93b19c4e25f5c8d208c98D271afA";
+      const contractAddress = "0xaC2971A5362DBD224951Aa3B949dFa0f894B983B";
       const contractABI = [
         {
           inputs: [
@@ -139,6 +139,49 @@
           type: "event",
         },
         {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "address",
+              name: "previousOwner",
+              type: "address",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "newOwner",
+              type: "address",
+            },
+          ],
+          name: "OwnershipTransferred",
+          type: "event",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          name: "bids",
+          outputs: [
+            {
+              internalType: "address",
+              name: "bidder",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
           inputs: [],
           name: "claimReward",
           outputs: [],
@@ -150,6 +193,19 @@
           name: "endGame",
           outputs: [],
           stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "endTime",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
           type: "function",
         },
         {
@@ -173,6 +229,50 @@
               internalType: "enum MxenGame.GameStatus",
               name: "",
               type: "uint8",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "getBiddingHistory",
+          outputs: [
+            {
+              internalType: "address[]",
+              name: "",
+              type: "address[]",
+            },
+            {
+              internalType: "uint256[]",
+              name: "",
+              type: "uint256[]",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "getMxenInPool",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "getTimeLeft",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
             },
           ],
           stateMutability: "view",
@@ -218,6 +318,19 @@
           type: "function",
         },
         {
+          inputs: [],
+          name: "owner",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
           inputs: [
             {
               internalType: "uint256",
@@ -226,6 +339,20 @@
             },
           ],
           name: "placeBid",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "renounceOwnership",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "startGame",
           outputs: [],
           stateMutability: "nonpayable",
           type: "function",
@@ -244,23 +371,16 @@
           type: "function",
         },
         {
-          inputs: [],
-          name: "startGame",
-          outputs: [],
-          stateMutability: "nonpayable",
-          type: "function",
-        },
-        {
-          inputs: [],
-          name: "endTime",
-          outputs: [
+          inputs: [
             {
-              internalType: "uint256",
-              name: "",
-              type: "uint256",
+              internalType: "address",
+              name: "newOwner",
+              type: "address",
             },
           ],
-          stateMutability: "view",
+          name: "transferOwnership",
+          outputs: [],
+          stateMutability: "nonpayable",
           type: "function",
         },
         {
@@ -283,12 +403,15 @@
         },
       ];
 
+      let bidContract;
+
       async function initApp() {
         if (typeof window.ethereum !== "undefined") {
           window.web3 = new Web3(window.ethereum);
           try {
             await window.ethereum.enable();
             const contract = new web3.eth.Contract(contractABI, contractAddress);
+            bidContract = contract;
 
             updateUI(contract);
           } catch (error) {
@@ -297,6 +420,18 @@
         } else {
           console.error("Metamask not detected");
         }
+      }
+
+      function secondsToTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        const formattedHours = String(hours).padStart(2, "0");
+        const formattedMinutes = String(minutes).padStart(2, "0");
+        const formattedSeconds = String(remainingSeconds).padStart(2, "0");
+
+        return `${formattedHours}h : ${formattedMinutes}m : ${formattedSeconds}s`;
       }
 
       async function updateUI(contract) {
@@ -310,20 +445,21 @@
         // Fetch data from the contract and update the DOM elements
         try {
           const timeLeft = await contract.methods.getTimeLeft().call();
-          timeLeftElement.textContent = timeLeft + " seconds left";
+          timeLeftElement.textContent = secondsToTime(timeLeft) + " left";
 
           const mxenInPool = await contract.methods.getMxenInPool().call();
           mxenInPoolElement.textContent = mxenInPool + " Mxen";
 
           const bids = await contract.methods.getBiddingHistory().call();
           biddingHistoryList.innerHTML = "";
-          bids.forEach((bid) => {
+          bids[0].forEach((bid) => {
+            const index = bids[0].indexOf(bid);
             const listItem = document.createElement("li");
-            listItem.textContent = `${bid[0]}: ${bid[1]} Mxen`;
+            listItem.textContent = `${bid}: ${bids[1][index]} Mxen`;
             biddingHistoryList.appendChild(listItem);
           });
 
-          const participants = await contract.methods.getParticipants().call();
+          const participants = bids[0];
           participantList.innerHTML = "";
           participants.forEach((participant) => {
             const listItem = document.createElement("li");
@@ -332,13 +468,30 @@
           });
 
           // Add your logic to enable/disable buttons based on game status and user interactions
-          // Example:
-          // bidButton.disabled = timeLeft === 0;
-          // claimButton.disabled = // some logic based on game status
+          bidButton.disabled = timeLeft === 0;
+          claimButton.disabled = mxenInPool === 0;
         } catch (error) {
-          console.error("Error fetching contract data:", error);
+          console.error("Error fetching contract data: ", error);
         }
       }
+
+      bidButton.addEventListener("click", async function () {
+        // Call bid method of contract
+        try {
+          const highestBid = await bidContract.methods.highestBid().call();
+          await bidContract.methods.placeBid((parseInt(highestBid) + 5000).toString()).send({ from: account });
+        } catch (error) {
+          console.error("Error bidding game: ", error);
+        }
+      });
+
+      claimButton.addEventListener("click", async function () {
+        try {
+          await bidContract.methods.claimReward().call();
+        } catch (error) {
+          console.error("Error claiming reward: ", error);
+        }
+      });
 
       window.addEventListener("load", initApp);
     </script>
