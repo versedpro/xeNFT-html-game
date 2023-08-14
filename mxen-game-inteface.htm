@@ -448,7 +448,7 @@
           timeLeftElement.textContent = secondsToTime(timeLeft) + " left";
 
           const mxenInPool = await contract.methods.getMxenInPool().call();
-          mxenInPoolElement.textContent = mxenInPool + " Mxen";
+          mxenInPoolElement.textContent = mxenInPool / 10 ** 18 + " Mxen";
 
           const bids = await contract.methods.getBiddingHistory().call();
           biddingHistoryList.innerHTML = "";
@@ -479,6 +479,10 @@
         // Call bid method of contract
         try {
           const highestBid = await bidContract.methods.highestBid().call();
+
+          const accounts = await web3.eth.getAccounts();
+          account = accounts[0];
+
           await bidContract.methods.placeBid((parseInt(highestBid) + 5000).toString()).send({ from: account });
         } catch (error) {
           console.error("Error bidding game: ", error);
