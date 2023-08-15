@@ -627,8 +627,8 @@
 
           const bids = await contract.methods.getBiddingHistory().call();
           biddingHistoryList.innerHTML = "";
-          bids[0].forEach((bid) => {
-            const index = bids[0].indexOf(bid);
+          bids[0].forEach((bid, index) => {
+            // const index = bids[0].indexOf(bid);
             const listItem = document.createElement("li");
             listItem.textContent = `${bid}: ${bids[1][index]} Mxen`;
             biddingHistoryList.appendChild(listItem);
