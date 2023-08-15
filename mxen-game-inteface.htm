@@ -97,6 +97,7 @@
 
     <script>
       const contractAddress = "0xaC2971A5362DBD224951Aa3B949dFa0f894B983B";
+
       const contractABI = [
         {
           inputs: [
@@ -643,15 +644,18 @@
 
           approveButton.disabled = false;
 
-          // Add your logic to enable/disable buttons based on game status and user interactions
-          bidButton.disabled = timeLeft === 0;
-          claimButton.disabled = mxenInPool === 0;
+          // Add your logic to enable/disable buttons based on token allowance, game status and user interactions
+          const allowance = await mxenContract.methods.allowance(account, contractAddress).call();
+          const gameStatus = await contract.methods.gameStatus().call();
+          bidButton.disabled = timeLeft === 0 || parseInt(allowance) === 0;
+          claimButton.disabled = mxenInPool === 0 || parseInt(gameStatus) !== 2;
         } catch (error) {
           console.error("Error fetching contract data: ", error);
         }
       }
 
       approveButton.addEventListener("click", async function () {
+        // Approve game contract to spend MXEN token on behalf of user
         try {
           const balance = await mxenContract.methods.balanceOf(account).call();
           await mxenContract.methods.approve(contractAddress, balance).send({ from: account });
@@ -661,7 +665,7 @@
       });
 
       bidButton.addEventListener("click", async function () {
-        // Call bid method of contract
+        // Place bid of game
         try {
           const highestBid = await bidContract.methods.highestBid().call();
 
@@ -672,6 +676,7 @@
       });
 
       claimButton.addEventListener("click", async function () {
+        // Claim reward of game
         try {
           await bidContract.methods.claimReward().call();
         } catch (error) {
