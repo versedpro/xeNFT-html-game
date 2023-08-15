@@ -89,6 +89,7 @@
       </div>
 
       <div class="button-section">
+        <button id="approveButton" class="action-button" disabled>Approve Game</button>
         <button id="bidButton" class="action-button" disabled>Bid 5,000 Mxen more than current higest bidder</button>
         <button id="claimButton" class="action-button" disabled>Claim Reward</button>
       </div>
@@ -403,17 +404,189 @@
         },
       ];
 
-      let bidContract;
+      const mxenABI = [
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "owner",
+              type: "address",
+            },
+            {
+              internalType: "address",
+              name: "spender",
+              type: "address",
+            },
+          ],
+          name: "allowance",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "spender",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+          ],
+          name: "approve",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
+          ],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "account",
+              type: "address",
+            },
+          ],
+          name: "balanceOf",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "decimals",
+          outputs: [
+            {
+              internalType: "uint8",
+              name: "",
+              type: "uint8",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "spender",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "subtractedValue",
+              type: "uint256",
+            },
+          ],
+          name: "decreaseAllowance",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
+          ],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "spender",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "addedValue",
+              type: "uint256",
+            },
+          ],
+          name: "increaseAllowance",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
+          ],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "name",
+          outputs: [
+            {
+              internalType: "string",
+              name: "",
+              type: "string",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "symbol",
+          outputs: [
+            {
+              internalType: "string",
+              name: "",
+              type: "string",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "totalSupply",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+      ];
+
+      let bidContract, mxenContract, account;
 
       async function initApp() {
         if (typeof window.ethereum !== "undefined") {
           window.web3 = new Web3(window.ethereum);
           try {
             await window.ethereum.enable();
-            const contract = new web3.eth.Contract(contractABI, contractAddress);
-            bidContract = contract;
+            bidContract = new web3.eth.Contract(contractABI, contractAddress);
+            mxenContract = new web3.eth.Contract(mxenABI, "0x2AB0e9e4eE70FFf1fB9D67031E44F6410170d00e");
+            const accounts = await web3.eth.getAccounts();
+            account = accounts[0];
 
-            updateUI(contract);
+            updateUI(bidContract);
           } catch (error) {
             console.error("User denied account access or other error:", error);
           }
@@ -439,6 +612,7 @@
         const mxenInPoolElement = document.getElementById("mxenInPool");
         const biddingHistoryList = document.getElementById("biddingHistory");
         const participantList = document.getElementById("participantList");
+        const approveButton = document.getElementById("approveButton");
         const bidButton = document.getElementById("bidButton");
         const claimButton = document.getElementById("claimButton");
 
@@ -467,6 +641,8 @@
             participantList.appendChild(listItem);
           });
 
+          approveButton.disabled = false;
+
           // Add your logic to enable/disable buttons based on game status and user interactions
           bidButton.disabled = timeLeft === 0;
           claimButton.disabled = mxenInPool === 0;
@@ -475,13 +651,19 @@
         }
       }
 
+      approveButton.addEventListener("click", async function () {
+        try {
+          const balance = await mxenContract.methods.balanceOf(account).call();
+          await mxenContract.methods.approve(contractAddress, balance).send({ from: account });
+        } catch (error) {
+          console.error("Error approving game: ", error);
+        }
+      });
+
       bidButton.addEventListener("click", async function () {
         // Call bid method of contract
         try {
           const highestBid = await bidContract.methods.highestBid().call();
-
-          const accounts = await web3.eth.getAccounts();
-          account = accounts[0];
 
           await bidContract.methods.placeBid((parseInt(highestBid) + 5000).toString()).send({ from: account });
         } catch (error) {
