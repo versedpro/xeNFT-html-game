@@ -623,7 +623,8 @@
           timeLeftElement.textContent = secondsToTime(timeLeft) + " left";
 
           const mxenInPool = await contract.methods.getMxenInPool().call();
-          mxenInPoolElement.textContent = mxenInPool / 10 ** 18 + " Mxen";
+          console.log(mxenInPool.slice(0, -18));
+          mxenInPoolElement.textContent = mxenInPool.slice(0, -18) + " Mxen";
 
           const bids = await contract.methods.getBiddingHistory().call();
           biddingHistoryList.innerHTML = "";
@@ -651,7 +652,7 @@
           bidButton.disabled = timeLeft === 0 || parseInt(allowance) === 0;
           bidButton.textContent = `Bid ${parseInt(highestBid) + 5000} amount Mxen to be the highest bidder`;
           claimButton.disabled = mxenInPool === 0 || parseInt(gameStatus) !== 2;
-          claimButton.textContent = `Claim ${mxenInPool / 10 ** 18} token`;
+          claimButton.textContent = `Claim ${(mxenInPool * 0.8) / 10 ** 18} token`;
         } catch (error) {
           console.error("Error fetching contract data: ", error);
         }
