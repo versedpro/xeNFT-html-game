@@ -90,7 +90,7 @@
 
       <div class="button-section">
         <button id="approveButton" class="action-button" disabled>Approve Game</button>
-        <button id="bidButton" class="action-button" disabled>Bid 5,000 Mxen more than current higest bidder</button>
+        <button id="bidButton" class="action-button" disabled>Bid unknown amount Mxen to be the highest bidder</button>
         <button id="claimButton" class="action-button" disabled>Claim Reward</button>
       </div>
     </div>
@@ -647,8 +647,11 @@
           // Add your logic to enable/disable buttons based on token allowance, game status and user interactions
           const allowance = await mxenContract.methods.allowance(account, contractAddress).call();
           const gameStatus = await contract.methods.gameStatus().call();
+          const highestBid = await contract.methods.highestBid().call();
           bidButton.disabled = timeLeft === 0 || parseInt(allowance) === 0;
+          bidButton.textContent = `Bid ${parseInt(highestBid) + 5000} amount Mxen to be the highest bidder`;
           claimButton.disabled = mxenInPool === 0 || parseInt(gameStatus) !== 2;
+          claimButton.textContent = `Claim ${mxenInPool / 10 ** 18} token`;
         } catch (error) {
           console.error("Error fetching contract data: ", error);
         }
