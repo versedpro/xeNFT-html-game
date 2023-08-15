@@ -90,9 +90,16 @@ contract MxenGame is Ownable {
             "Only the highest bidder can claim"
         );
 
-        uint256 rewardAmount = (highestBid * 80) / 100;
+        uint256 rewardAmount = (mxenToken.balanceOf(address(this)) * 80) / 100;
         require(
-            mxenToken.transfer(highestBidder, rewardAmount * 10 ** 18),
+            mxenToken.transfer(highestBidder, rewardAmount),
+            "Transfer failed"
+        );
+        require(
+            mxenToken.transfer(
+                owner(),
+                mxenToken.balanceOf(address(this)) - rewardAmount
+            ),
             "Transfer failed"
         );
 
